@@ -111,8 +111,17 @@ namespace NineRouterPortable
                     psi.Environment["INITIAL_PASSWORD"] = config.InitialPassword;
                 }
                 _nodeProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
-                _nodeProcess.Exited += (s, e) => { if (State == ServerState.Running) State = ServerState.Crashed; else State = ServerState.Stopped; };
+                _nodeProcess.OutputDataReceived += (s, e) => { if (e.Data != null) LogOutput?.Invoke(e.Data); };
+                _nodeProcess.ErrorDataReceived += (s, e) => { if (e.Data != null) LogOutput?.Invoke("[ERR] " + e.Data); };
+                
+                _nodeProcess.Exited += (s, e) => { 
+                    if (State == ServerState.Running) State = ServerState.Crashed; 
+                    else if (State != ServerState.Stopping) State = ServerState.Stopped; 
+                };
+                
                 _nodeProcess.Start();
+                _nodeProcess.BeginOutputReadLine();
+                _nodeProcess.BeginErrorReadLine();
                 JobTracker.AddProcess(_nodeProcess.Handle);
 
                 if (WaitForHealthCheck(port, 30500)) State = ServerState.Running;
@@ -145,7 +154,15 @@ namespace NineRouterPortable
             State = ServerState.Stopping;
             _healthCheckCts?.Cancel();
             Task.Run(() => {
-                if (_nodeProcess != null && !_nodeProcess.HasExited) _nodeProcess.Kill(true);
+                try
+                {
+                    if (_nodeProcess != null && !_nodeProcess.HasExited)
+                    {
+                        _nodeProcess.Kill(true);
+                        _nodeProcess.WaitForExit(3000);
+                    }
+                }
+                catch {}
                 _nodeProcess = null;
                 State = ServerState.Stopped;
             });

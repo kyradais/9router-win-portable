@@ -81,7 +81,7 @@ namespace NineRouterPortable
             this.Controls.Add(_lnkLan);
             y += 25;
 
-            var lblLogTitle = new Label { Text = "Activity Log:", Font = new Font("Segoe UI", 8, FontStyle.Bold), Location = new Point(margin, y), AutoSize = true };
+            var lblLogTitle = new Label { Text = "Console Output:", Font = new Font("Segoe UI", 8, FontStyle.Bold), Location = new Point(margin, y), AutoSize = true };
             this.Controls.Add(lblLogTitle);
             y += 18;
 
